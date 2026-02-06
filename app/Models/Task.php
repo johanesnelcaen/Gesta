@@ -60,4 +60,20 @@ class Task extends Model
     {
         return $this->belongsTo(User::class, 'assigned_to');
     }
+
+    // 🔹 Accessor : sous-tâches filtrées par l'utilisateur connecté
+    public function getFilteredSubtasksAttribute()
+    {
+        $userId = auth()->id();
+
+        if (!$userId) {
+            return collect();
+        }
+
+        return $this->subtasks
+            ? $this->subtasks->filter(fn($sub) =>
+                $sub->user_id === $userId || $sub->assigned_to === $userId
+            )
+            : collect();
+    }
 }

@@ -1,17 +1,8 @@
 <div class="p-4 bg-white rounded shadow mt-6">
-
-    {{-- Bloc principal côte à côte --}}
     <div class="flex flex-col md:flex-row gap-4">
 
-        {{-- Contenu (membres + formulaire) 70% --}}
         <div class="md:basis-7/12 flex-shrink-0">
             
-            @if ($message)
-                <div class="mb-4 text-green-600">
-                    {{ $message }}
-                </div>
-            @endif
-
             {{-- Formulaire ajout membre --}}
             @if(auth()->id() === $group->owner_id)
                 <form wire:submit.prevent="addMember" class="mb-4 flex gap-2">
@@ -28,22 +19,35 @@
                     {{ $group->users->count() }}
                 </span>
             </h3>
+
             <ul class="list-disc pl-5">
                 @foreach($group->users as $user)
-                    <li>{{ $user->name }} ({{ $user->email }})</li>
+                    <li class="flex justify-between items-center">
+                        <span>{{ $user->name }} ({{ $user->email }})</span>
+
+                        {{-- Boutons avec confirmation SweetAlert --}}
+                        @if(auth()->id() === $group->owner_id && $user->id !== $group->owner_id)
+                            <button onclick="confirmRemoveMember({{ $user->id }})"
+                                    class="ml-2 text-red-500 hover:underline">
+                                Retirer
+                            </button>
+                        @elseif(auth()->id() === $user->id)
+                            <button onclick="confirmRemoveMember({{ $user->id }})"
+                                    class="ml-2 text-orange-500 hover:underline">
+                                Quitter
+                            </button>
+                        @endif
+                    </li>
                 @endforeach
             </ul>
-
         </div>
 
         {{-- Lottie 30% --}}
         <div class="md:basis-5/12 flex justify-center items-center flex-shrink-0">
             <div id="lottie-container" style="width:100%; max-width:300px;"></div>
         </div>
-
     </div>
 
-    {{-- Animation Lottie --}}
     <script>
         const animation = lottie.loadAnimation({
             container: document.getElementById('lottie-container'),
@@ -52,6 +56,44 @@
             autoplay: true,
             path: '{{ asset("animations/team work.json") }}'
         });
-    </script>
 
+        // Confirmation SweetAlert avant suppression
+        function confirmRemoveMember(userId) {
+            Swal.fire({
+                title: "Êtes-vous sûr ?",
+                text: "Cette action ne peut pas être annulée.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#e3342f",
+                cancelButtonColor: "#6c757d",
+                confirmButtonText: "Oui, continuer",
+                cancelButtonText: "Annuler"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Livewire.dispatch('removeMemberConfirmed', userId);
+                }
+            });
+        }
+
+        // Notifications succès / erreur depuis Livewire
+        Livewire.on('swal:success', (data) => {
+            Swal.fire({
+                icon: 'success',
+                title: 'Succès',
+                text: data.message,
+                timer: 2000,
+                showConfirmButton: false
+            });
+        });
+
+        Livewire.on('swal:error', (data) => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Erreur',
+                text: data.message,
+                timer: 2000,
+                showConfirmButton: false
+            });
+        });
+    </script>
 </div>

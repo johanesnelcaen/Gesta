@@ -12,9 +12,44 @@
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
-                        {{ __('Accueil') }}
-                    </x-nav-link>
+                 <div class="relative sm:flex sm:items-center" x-data="{ open: false }">
+    <!-- Lien principal -->
+    <a href="{{ route('dashboard') }}" 
+       class="inline-flex items-center px-3 py-2 text-gray-700 hover:text-blue-600 font-medium">
+        Accueil
+    </a>
+
+    <!-- Chevron pour ouvrir au clic -->
+    <button @click="open = !open" class="ml-1 text-gray-600 hover:text-gray-900 focus:outline-none">
+        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 9l-7 7-7-7" />
+        </svg>
+    </button>
+
+    <!-- Sous-menu -->
+    <div
+        x-show="open"
+        @click.away="open = false"
+        x-transition
+        class="absolute left-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50"
+    >
+        <ul class="py-2 text-gray-700">
+            <li>
+                <a href="{{ route('task-manager.index') }}" class="block px-4 py-2 hover:bg-gray-100">
+                    <i class="fas fa-list-check mr-2"></i> Mes tâches
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('groups.index') }}" class="block px-4 py-2 hover:bg-gray-100">
+                    <i class="fas fa-users mr-2"></i> Groupes
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+
 
                     <x-nav-link href="{{ route('statistiques') }}" :active="request()->routeIs('statistiques')">
     {{ __('Statistiques') }}

@@ -9,25 +9,11 @@ use Illuminate\Support\Facades\Auth;
 
 class ManageMembers extends Component
 {
-    /**
-     * @var int ID du groupe
-     */
     public $groupId;
-
-    /**
-     * @var string Email du membre à ajouter
-     */
     public $email;
-
-    /**
-     * @var string Message de retour
-     */
-    public $message = '';
-
-    /**
-     * @var \Illuminate\Support\Collection|\App\Models\User[] Membres du groupe
-     */
     public $members;
+
+    protected $listeners = ['removeMemberConfirmed' => 'removeMember'];
 
     public function mount($groupId)
     {
@@ -35,23 +21,16 @@ class ManageMembers extends Component
         $this->loadMembers();
     }
 
-    /**
-     * Charger les membres du groupe
-     */
     private function loadMembers(): void
     {
         $group = Group::findOrFail($this->groupId);
-        $this->members = $group->users; // Relation users() doit exister dans Group
+        $this->members = $group->users;
     }
 
-    /**
-     * Ajouter un membre au groupe
-     */
     public function addMember(): void
     {
         $group = Group::findOrFail($this->groupId);
 
-        // Vérification du propriétaire
         if (Auth::id() !== $group->owner_id) {
             abort(403, 'Accès refusé');
         }
@@ -64,13 +43,36 @@ class ManageMembers extends Component
 
         if (!$group->users->contains($user->id)) {
             $group->users()->attach($user->id);
-            $this->loadMembers(); // rafraîchir la liste
-            $this->message = 'Membre ajouté avec succès.';
+            $this->loadMembers();
+
+            $this->dispatch('swal:success', [
+                'message' => 'Membre ajouté avec succès.'
+            ]);
         } else {
-            $this->message = 'Utilisateur déjà membre du groupe.';
+            $this->dispatch('swal:error', [
+                'message' => 'Utilisateur déjà membre du groupe.'
+            ]);
         }
 
         $this->reset('email');
+    }
+
+    public function removeMember($userId): void
+    {
+        $group = Group::findOrFail($this->groupId);
+
+        if (Auth::id() !== $group->owner_id && Auth::id() !== (int) $userId) {
+            abort(403, 'Accès refusé');
+        }
+
+        $group->users()->detach($userId);
+        $this->loadMembers();
+
+        $this->dispatch('swal:success', [
+            'message' => (Auth::id() === (int) $userId)
+                ? 'Vous avez quitté le groupe.'
+                : 'Membre retiré avec succès.'
+        ]);
     }
 
     public function render()

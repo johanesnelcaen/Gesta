@@ -25,7 +25,7 @@
               <div class="mt-2">
     <a href="{{ route('groups.show', $group->id) }}" class="text-blue-600 hover:underline">Gérer</a>
     |
-    <a href="{{ route('groups.tasks', $group->id) }}" class="text-green-600 hover:underline">Voir les tâches</a>
+    <a href="{{ route('groups.tasks', $group->id) }}" class="text-green-600 hover:underline"> tâches</a>
     |
     <a href="{{ route('groups.report', $group->id) }}" class="text-purple-600 hover:underline">Rapport</a>
     |

@@ -54,6 +54,7 @@
 </div>
 
 <!-- FullCalendar JS -->
+ <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
  @livewireScripts
  @stack('scripts')
  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>

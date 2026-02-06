@@ -61,18 +61,33 @@ class Notifications extends Component
         // 🔹 Fusionner les deux collections
         $this->tasks = $personalTasks->merge($groupTasks);
 
-        // 🔹 Filtrer les sous-tâches assignées à l'utilisateur
+        // 🔹 Calculer la progression et envoyer les notifications
         foreach ($this->tasks as $task) {
-            $task->setRelation('filteredSubtasks', $task->subtasks->filter(fn($sub) =>
-                $sub->user_id === $userId || $sub->assigned_to === $userId
-            ));
-        }
+            // Calculer la progression de la tâche principale (ne pas sauvegarder)
+            $task->progress = $this->getProgressPercentage($task);
 
-        // 🔹 Notifications pour tâches en retard non notifiées
-        foreach ($this->tasks as $task) {
+            // Notification pour tâche en retard non notifiée
             if (!$task->is_completed && $task->end && Carbon::parse($task->end)->isPast() && !$task->notified) {
                 $user->notify(new TaskOverdueNotification($task));
-                $task->update(['notified' => true]);
+                // Mettre à jour UNIQUEMENT le champ notified via une requête directe
+                Task::where('id', $task->id)->update(['notified' => true]);
+                $task->notified = true; // Synchroniser l'objet en mémoire
+            }
+
+            // Calculer la progression des sous-tâches
+            if ($task->subtasks) {
+                foreach ($task->subtasks as $subtask) {
+                    // Calculer la progression (ne pas sauvegarder)
+                    $subtask->progress = $this->getProgressPercentage($subtask);
+                    
+                    // Notification pour sous-tâche en retard
+                    if (!$subtask->is_completed && $subtask->end && Carbon::parse($subtask->end)->isPast() && !$subtask->notified) {
+                        $user->notify(new TaskOverdueNotification($subtask));
+                        // Mettre à jour UNIQUEMENT le champ notified via une requête directe
+                        Task::where('id', $subtask->id)->update(['notified' => true]);
+                        $subtask->notified = true; // Synchroniser l'objet en mémoire
+                    }
+                }
             }
         }
 
@@ -94,18 +109,45 @@ class Notifications extends Component
     }
 
     /**
-     * Récupérer les sous-tâches filtrées pour une tâche
-     *
-     * @return Collection
+     * Calculer le pourcentage de progression basé sur les dates
      */
-    public function getSubtasks(int $taskId): Collection
+    private function getProgressPercentage($task): int
     {
-        $task = $this->tasks->where('id', $taskId)->first();
-        return $task ? $task->filteredSubtasks : collect();
+        if (!$task->start || !$task->end) {
+            return 0; // pas de dates, pas de progression
+        }
+
+        $start = Carbon::parse($task->start);
+        $end = Carbon::parse($task->end);
+        $now = Carbon::now();
+
+        if ($now->gte($end)) {
+            return 100; // échéance dépassée
+        }
+
+        if ($now->lte($start)) {
+            return 0; // tâche pas encore commencée
+        }
+
+        $totalDuration = $end->diffInSeconds($start);
+        $elapsed = $now->diffInSeconds($start);
+
+        return round(($elapsed / $totalDuration) * 100);
     }
 
     public function render()
     {
+        // Recalculer la progression avant chaque affichage
+        foreach ($this->tasks as $task) {
+            $task->progress = $this->getProgressPercentage($task);
+            
+            if ($task->subtasks) {
+                foreach ($task->subtasks as $subtask) {
+                    $subtask->progress = $this->getProgressPercentage($subtask);
+                }
+            }
+        }
+        
         return view('livewire.notifications', [
             'tasks' => $this->tasks,
             'notifications' => $this->notifications,
