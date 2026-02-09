@@ -9,16 +9,32 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-   public function up()
+  public function up()
 {
     Schema::table('tasks', function (Blueprint $table) {
-        $table->date('due_date')->nullable(); // ou ->dateTime() selon ton besoin
-          $table->datetime('start')->nullable();
-        $table->datetime('end')->nullable();
-           $table->boolean('is_completed')->default(false);
-           $table->boolean('notified')->default(false);
-               });
+
+        if (!Schema::hasColumn('tasks', 'due_date')) {
+            $table->date('due_date')->nullable();
+        }
+
+        if (!Schema::hasColumn('tasks', 'start')) {
+            $table->dateTime('start')->nullable();
+        }
+
+        if (!Schema::hasColumn('tasks', 'end')) {
+            $table->dateTime('end')->nullable();
+        }
+
+        if (!Schema::hasColumn('tasks', 'is_completed')) {
+            $table->boolean('is_completed')->default(false);
+        }
+
+        if (!Schema::hasColumn('tasks', 'notified')) {
+            $table->boolean('notified')->default(false);
+        }
+    });
 }
+
 
 public function down()
 {
