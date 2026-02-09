@@ -5,6 +5,9 @@ namespace App\Livewire\Groups;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Group;
+use Livewire\Attributes\Layout;
+
+#[Layout('layouts.app')]
 
 class MyGroups extends Component
 {
