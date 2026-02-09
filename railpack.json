@@ -1,0 +1,21 @@
+{
+  "php": {
+    "extensions": [
+      "bcmath",
+      "ctype",
+      "curl",
+      "dom",
+      "fileinfo",
+      "filter",
+      "hash",
+      "mbstring",
+      "openssl",
+      "pcre",
+      "pdo",
+      "session",
+      "tokenizer",
+      "xml",
+      "redis"
+    ]
+  }
+}
