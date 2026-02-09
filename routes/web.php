@@ -2,53 +2,62 @@
 
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
+use App\Http\Controllers\{
+    StatistiqueController,
+    CalendrierController,
+    NotificationController,
+    GroupController,
+    GroupTaskController,
+    TaskController,
+    GroupReportController,
+    GroupChatController
+};
+use App\Livewire\Groups\{
+    MyGroups,
+    ManageMembers,
+    GroupTasks
+};
+use App\Models\Task;
+use Carbon\Carbon;
 
+/*
+|--------------------------------------------------------------------------
+| Dashboard & Home
+|--------------------------------------------------------------------------
+*/
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
-    Route::get('/', function () {
-        return view('dashboard');
-    })->name('home');
+    Route::get('/', fn() => view('dashboard'))->name('home');
+    Route::get('/dashboard', fn() => view('dashboard'))->name('dashboard');
 });
 
-
-Route::view('dashboard', 'dashboard')
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
-
-Route::middleware(['auth'])->group(function () {
-    Route::redirect('settings', 'settings/profile');
-
+/*
+|--------------------------------------------------------------------------
+| Settings (Livewire / Volt)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth'])->prefix('settings')->group(function () {
+    Route::redirect('/', 'settings/profile');
     Volt::route('settings/profile', 'settings.profile')->name('settings.profile');
     Volt::route('settings/password', 'settings.password')->name('settings.password');
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 });
 
-require __DIR__.'/auth.php';
-
-Route::middleware([
-    'auth:sanctum',
-    config('jetstream.auth_session'),
-    'verified',
-])->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
-});
-
-use App\Http\Controllers\StatistiqueController;
-use App\Http\Controllers\CalendrierController;
-use App\Http\Controllers\NotificationController;
-
+/*
+|--------------------------------------------------------------------------
+| Statistiques, Calendrier & Notifications
+|--------------------------------------------------------------------------
+*/
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/statistiques', [StatistiqueController::class, 'index'])->name('statistiques');
-   Route::get('/calendrier', function () {
-    return view('calendrier.index'); // Pas 'livewire.calendrier'
-})->middleware(['auth'])->name('calendrier'); 
-Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
+    Route::get('/calendrier', fn() => view('calendrier.index'))->name('calendrier');
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
 });
-use App\Models\Task;
-use Carbon\Carbon;
 
-
+/*
+|--------------------------------------------------------------------------
+| Subtasks JSON API
+|--------------------------------------------------------------------------
+*/
 Route::get('/subtasks/{parentId}', function ($parentId) {
     $subtasks = Task::where('parent_id', $parentId)
         ->whereNotNull('start')
@@ -57,11 +66,7 @@ Route::get('/subtasks/{parentId}', function ($parentId) {
             $isCompleted = $task->is_completed;
             $isOverdue = Carbon::parse($task->end)->isPast() && !$isCompleted;
 
-            $color = $isCompleted
-                ? '#38a169' // Vert pour terminé
-                : ($isOverdue
-                    ? '#e3342f' // Rouge pour en retard
-                    : '#3b82f6'); // Bleu pour en cours
+            $color = $isCompleted ? '#38a169' : ($isOverdue ? '#e3342f' : '#3b82f6');
 
             return [
                 'id' => $task->id,
@@ -73,52 +78,43 @@ Route::get('/subtasks/{parentId}', function ($parentId) {
         });
 
     return response()->json($subtasks);
-});
+})->middleware('auth');
 
-use App\Models\Group;
-
-
-use App\Livewire\Groups\MyGroups;
-use App\Livewire\Groups\ManageMembers;
-use App\Livewire\Groups\GroupTasks;
-
-use App\Http\Controllers\GroupTaskController;
-
+/*
+|--------------------------------------------------------------------------
+| Groups (Livewire + Controller)
+|--------------------------------------------------------------------------
+*/
 Route::middleware(['auth'])->prefix('groups')->name('groups.')->group(function () {
+    // Livewire group list
     Route::get('/', MyGroups::class)->name('index');
+
+    // Group tasks
     Route::get('/{group}/tasks', [GroupTaskController::class, 'show'])->name('tasks');
+
+    // Group report
+    Route::get('/{group}/report', [GroupReportController::class, 'show'])->name('report');
+    Route::get('/{group}/export-pdf', [GroupReportController::class, 'exportPDF'])->name('export.pdf');
+
+    // Group chat
+    Route::get('/{group}/chat', [GroupChatController::class, 'show'])->name('chat');
 });
 
-use App\Http\Controllers\GroupController;
-
+// Individual Group Controller (if needed)
 Route::get('/groups/{group}', [GroupController::class, 'show'])->name('groups.show');
 
-
-
-Route::middleware(['auth'])->group(function () {
-    Route::get('/groupes', function () {
-        return view('groups.index');
-    })->name('groups.index');
-});
-
-
-
-use App\Http\Controllers\TaskController;
-
+/*
+|--------------------------------------------------------------------------
+| Tasks
+|--------------------------------------------------------------------------
+*/
 Route::get('/taches', [TaskController::class, 'index'])
-    ->middleware(['auth'])
+    ->middleware('auth')
     ->name('task-manager.index');
 
-use App\Http\Controllers\GroupReportController;
-
-Route::get('/groups/{group}/report', [GroupReportController::class, 'show'])
-    ->name('groups.report')
-    ->middleware('auth');
-
-Route::get('/groups/{groupId}/export-pdf', [GroupReportController::class, 'exportPDF'])
-    ->name('groups.export.pdf');
-use App\Http\Controllers\GroupChatController;
-
-Route::get('/groups/{group}/chat', [GroupChatController::class, 'show'])
-    ->name('groups.chat')
-    ->middleware('auth');
+/*
+|--------------------------------------------------------------------------
+| Auth Routes
+|--------------------------------------------------------------------------
+*/
+require __DIR__.'/auth.php';
