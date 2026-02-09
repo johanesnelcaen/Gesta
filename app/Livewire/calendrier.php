@@ -15,24 +15,24 @@ class Calendrier extends Component
     {
         $userId = Auth::id();
 
-        // 1️⃣ Tâches personnelles (hors groupe)
+        // Tâches personnelles (hors groupe)
         $personalTasks = Task::whereNull('parent_id')
             ->where('user_id', $userId)
             ->whereNull('group_id')
             ->whereNotNull('start')
             ->get();
 
-        // 2️⃣ Tâches de groupe assignées à l'utilisateur
+        // Tâches de groupe assignées à l'utilisateur
         $groupTasks = Task::whereNull('parent_id')
             ->where('assigned_to', $userId)
             ->whereNotNull('group_id')
             ->whereNotNull('start')
             ->get();
 
-        // 3️⃣ Fusionner les deux collections
+        // Fusionner les deux collections
         $allTasks = $personalTasks->merge($groupTasks);
 
-        // 4️⃣ Transformer en format calendrier
+        // Transformer en format calendrier
         $this->tasks = $allTasks->map(function ($task) {
             $isCompleted = $task->is_completed;
             $isOverdue = Carbon::parse($task->end)->isPast() && !$isCompleted;
@@ -51,7 +51,8 @@ class Calendrier extends Component
     public function render()
     {
         return view('livewire.calendrier', [
-            'tasks' => $this->tasks,
+            // Protection : si $tasks n'est pas défini, on renvoie un tableau vide
+            'tasks' => $this->tasks ?? [],
         ]);
     }
 }
