@@ -74,7 +74,9 @@ class MyGroups extends Component
     }
 
     public function render()
-    {
-        return view('livewire.groups.my-groups');
-    }
+{
+    return view('livewire.groups.my-groups')
+        ->layout('layouts.app');
+}
+
 }
