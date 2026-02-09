@@ -12,11 +12,7 @@ use App\Http\Controllers\{
     GroupReportController,
     GroupChatController
 };
-use App\Livewire\Groups\{
-    MyGroups,
-    ManageMembers,
-    GroupTasks
-};
+use App\Livewire\Groups\MyGroups;
 use App\Models\Task;
 use Carbon\Carbon;
 
@@ -86,21 +82,21 @@ Route::get('/subtasks/{parentId}', function ($parentId) {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth'])->prefix('groups')->name('groups.')->group(function () {
-    // Livewire group list
+    // Livewire: liste des groupes
     Route::get('/', MyGroups::class)->name('index');
 
-    // Group tasks
+    // Controller: afficher les tâches d’un groupe
     Route::get('/{group}/tasks', [GroupTaskController::class, 'show'])->name('tasks');
 
-    // Group report
+    // Controller: rapport d’un groupe
     Route::get('/{group}/report', [GroupReportController::class, 'show'])->name('report');
     Route::get('/{group}/export-pdf', [GroupReportController::class, 'exportPDF'])->name('export.pdf');
 
-    // Group chat
+    // Controller: chat du groupe
     Route::get('/{group}/chat', [GroupChatController::class, 'show'])->name('chat');
 });
 
-// Individual Group Controller (if needed)
+// Controller: afficher un groupe individuel (si nécessaire)
 Route::get('/groups/{group}', [GroupController::class, 'show'])->name('groups.show');
 
 /*
