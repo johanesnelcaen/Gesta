@@ -7,3 +7,5 @@
 }
 @import "~@fullcalendar/core/main.css";
 @import "~@fullcalendar/daygrid/main.css";
+@import 'tailwindcss';
+@import '../../vendor/livewire/flux/dist/flux.css';
